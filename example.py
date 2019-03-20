@@ -36,7 +36,9 @@ class ASyncAdapter(requests.adapters.HTTPAdapter):
         data = conn.send(message)
         writer.write(data)
 
-        response = requests.models.Response()
+        status_code = 0
+        headers = []
+        reason = b''
         buffer = io.BytesIO()
 
         while True:
@@ -48,10 +50,9 @@ class ASyncAdapter(requests.adapters.HTTPAdapter):
                 conn.receive_data(data)
 
             elif event_type is h11.Response:
-                response.status_code = event.status_code
-                response.headers = requests.structures.CaseInsensitiveDict([(key.decode(), value.decode()) for key, value in event.headers])
-                response.encoding = requests.utils.get_encoding_from_headers(response.headers)
-                response.reason = event.reason
+                status_code = event.status_code
+                headers = [(key.decode(), value.decode()) for key, value in event.headers]
+                reason = event.reason
 
             elif event_type is h11.Data:
                 buffer.write(event.data)
@@ -63,17 +64,15 @@ class ASyncAdapter(requests.adapters.HTTPAdapter):
         writer.close()
         await writer.wait_closed()
 
-        # print(len(buffer.read()))
-        response.raw = urllib3.HTTPResponse(
+        resp = urllib3.HTTPResponse(
             body=buffer,
-            headers=list(response.headers.items()),
-            status=response.status_code,
-            reason=response.reason,
-            preload_content=True
+            headers=headers,
+            status=status_code,
+            reason=reason,
+            preload_content=False
         )
-        #print(response.raw.data)
-        #print('CONTENT', response.iter_content(4096))
-        return response
+
+        return self.build_response(request, resp)
 
 
 class ASyncRequests(requests.Session):
@@ -219,12 +218,9 @@ class ASyncRequests(requests.Session):
 async def main():
     session = ASyncRequests()
     response = await session.get('http://example.org')
-    #print(response.status_code)
-    #print(response.headers)
-    #print('DATA:', response.raw.data)
-    print(response._content_consumed)
-    print(response._content)
-    print('DATA:', [c for c in response.iter_content(4096)])
+    print('STATUS CODE:', response.status_code)
+    print('HEADERS:', response.headers)
+    print('TEXT:', response.text)
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
