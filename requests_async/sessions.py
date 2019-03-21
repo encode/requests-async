@@ -1,6 +1,21 @@
 import datetime
 import requests
 from . import adapters
+from requests.exceptions import TooManyRedirects, InvalidSchema, ChunkedEncodingError, ContentDecodingError
+from requests.cookies import extract_cookies_to_jar, merge_cookies
+from requests.status_codes import codes
+from requests.utils import requote_uri
+from urllib.parse import urlparse
+
+
+def to_native_string(string, encoding='ascii'):
+    """Given a string object, regardless of type, returns a representation of
+    that string in the native string type, encoding and decoding where
+    necessary. This assumes ASCII unless told otherwise.
+    """
+    if isinstance(string, str):
+        return string
+    return string.decode(encoding)
 
 
 class Session(requests.Session):
@@ -130,11 +145,11 @@ class Session(requests.Session):
 
         requests.cookies.extract_cookies_to_jar(self.cookies, request, r.raw)
 
-        # Redirect resolving generator.
-        gen = self.resolve_redirects(r, request, **kwargs)
-
-        # Resolve redirects if allowed.
-        history = [resp for resp in gen] if allow_redirects else []
+        # Redirect resolving.
+        history = []
+        if allow_redirects:
+            async for resp in self.resolve_redirects(r, request, **kwargs):
+                history.append(resp)
 
         # Shuffle things around if there's history.
         if history:
@@ -145,15 +160,127 @@ class Session(requests.Session):
             r.history = history
 
         # If redirects aren't being followed, store the response on the Request for Response.next().
-        if not allow_redirects:
-            try:
-                r._next = next(
-                    self.resolve_redirects(r, request, yield_requests=True, **kwargs)
-                )
-            except StopIteration:
-                pass
+        # if not allow_redirects:
+        #     try:
+        #         r._next = next(
+        #             self.resolve_redirects(r, request, yield_requests=True, **kwargs)
+        #         )
+        #     except StopIteration:
+        #         pass
 
         if not stream:
             r.content
 
         return r
+
+    async def resolve_redirects(self, resp, req, stream=False, timeout=None,
+                          verify=True, cert=None, proxies=None, yield_requests=False, **adapter_kwargs):
+        """Receives a Response. Returns a generator of Responses or Requests."""
+        hist = []  # keep track of history
+
+        url = self.get_redirect_target(resp)
+        previous_fragment = urlparse(req.url).fragment
+        while url:
+            prepared_request = req.copy()
+
+            # Update history and keep track of redirects.
+            # resp.history must ignore the original request in this loop
+            hist.append(resp)
+            resp.history = hist[1:]
+
+            try:
+                resp.content  # Consume socket so it can be released
+            except (ChunkedEncodingError, ContentDecodingError, RuntimeError):
+                resp.raw.read(decode_content=False)
+
+            if len(resp.history) >= self.max_redirects:
+                raise TooManyRedirects('Exceeded %s redirects.' % self.max_redirects, response=resp)
+
+            # Release the connection back into the pool.
+            resp.close()
+
+            # Handle redirection without scheme (see: RFC 1808 Section 4)
+            if url.startswith('//'):
+                parsed_rurl = urlparse(resp.url)
+                url = '%s:%s' % (to_native_string(parsed_rurl.scheme), url)
+
+            # Normalize url case and attach previous fragment if needed (RFC 7231 7.1.2)
+            parsed = urlparse(url)
+            if parsed.fragment == '' and previous_fragment:
+                parsed = parsed._replace(fragment=previous_fragment)
+            elif parsed.fragment:
+                previous_fragment = parsed.fragment
+            url = parsed.geturl()
+
+            # Facilitate relative 'location' headers, as allowed by RFC 7231.
+            # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
+            # Compliant with RFC3986, we percent encode the url.
+            if not parsed.netloc:
+                url = urljoin(resp.url, requote_uri(url))
+            else:
+                url = requote_uri(url)
+
+            prepared_request.url = to_native_string(url)
+
+            self.rebuild_method(prepared_request, resp)
+
+            # https://github.com/requests/requests/issues/1084
+            if resp.status_code not in (codes.temporary_redirect, codes.permanent_redirect):
+                # https://github.com/requests/requests/issues/3490
+                purged_headers = ('Content-Length', 'Content-Type', 'Transfer-Encoding')
+                for header in purged_headers:
+                    prepared_request.headers.pop(header, None)
+                prepared_request.body = None
+
+            headers = prepared_request.headers
+            try:
+                del headers['Cookie']
+            except KeyError:
+                pass
+
+            # Extract any cookies sent on the response to the cookiejar
+            # in the new request. Because we've mutated our copied prepared
+            # request, use the old one that we haven't yet touched.
+            extract_cookies_to_jar(prepared_request._cookies, req, resp.raw)
+            merge_cookies(prepared_request._cookies, self.cookies)
+            prepared_request.prepare_cookies(prepared_request._cookies)
+
+            # Rebuild auth and proxy information.
+            proxies = self.rebuild_proxies(prepared_request, proxies)
+            self.rebuild_auth(prepared_request, resp)
+
+            # A failed tell() sets `_body_position` to `object()`. This non-None
+            # value ensures `rewindable` will be True, allowing us to raise an
+            # UnrewindableBodyError, instead of hanging the connection.
+            rewindable = (
+                prepared_request._body_position is not None and
+                ('Content-Length' in headers or 'Transfer-Encoding' in headers)
+            )
+
+            # Attempt to rewind consumed file-like object.
+            if rewindable:
+                rewind_body(prepared_request)
+
+            # Override the original request.
+            req = prepared_request
+
+            if yield_requests:
+                yield req
+            else:
+
+                resp = await self.send(
+                    req,
+                    stream=stream,
+                    timeout=timeout,
+                    verify=verify,
+                    cert=cert,
+                    proxies=proxies,
+                    allow_redirects=False,
+                    **adapter_kwargs
+                )
+
+                extract_cookies_to_jar(self.cookies, prepared_request, resp.raw)
+
+                # extract redirect url, if any, for the next loop
+                url = self.get_redirect_target(resp)
+                yield resp

@@ -9,7 +9,6 @@ Next set of things to deal with:
 * https support, and certificate checking.
 * streaming support for uploads and downloads.
 * connection pooling.
-* async redirections.
 * async cookie persistence, for on-disk cookie stores.
 * make sure authentication works okay (does it use adapters, is the API broken there now?)
 * timeouts
