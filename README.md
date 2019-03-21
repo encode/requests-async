@@ -12,14 +12,19 @@ Next set of things to deal with:
 * async redirections.
 * async cookie persistence, for on-disk cookie stores.
 * make sure authentication works okay (does it use adapters, is the API broken there now?)
+* timeouts
 
-Installation:
+## Requirements
+
+* Python 3.6, 3.7.
+
+## Installation:
 
 ```shell
 $ pip install requests-async
 ```
 
-Usage:
+## Usage:
 
 Just use the standard requests API, but use `await` for making requests.
 

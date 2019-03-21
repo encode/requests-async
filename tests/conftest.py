@@ -43,7 +43,7 @@ app = Starlette(routes=routes)
 async def server():
     config = Config(app=app, lifespan="off")
     server = Server(config=config)
-    task = asyncio.create_task(server.serve())
+    task = asyncio.ensure_future(server.serve())
     try:
         while not server.started:
             await asyncio.sleep(0.0001)
