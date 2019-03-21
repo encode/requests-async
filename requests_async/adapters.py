@@ -1,11 +1,22 @@
 import asyncio
 import io
+import ssl
 import typing
 from urllib.parse import urlparse
 
 import h11
 import requests
 import urllib3
+
+
+def no_verify():
+    # ssl.create_default_context()
+    sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    sslcontext.options |= ssl.OP_NO_SSLv2
+    sslcontext.options |= ssl.OP_NO_SSLv3
+    sslcontext.options |= ssl.OP_NO_COMPRESSION
+    sslcontext.set_default_verify_paths()
+    return sslcontext
 
 
 class HTTPAdapter(requests.adapters.HTTPAdapter):
@@ -23,7 +34,8 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
             target += "?" + urlparts.query
         headers = [("host", urlparts.netloc)] + list(request.headers.items())
 
-        reader, writer = await asyncio.open_connection(hostname, port)
+        conn_kwargs = {'ssl': no_verify()} if urlparts.scheme == 'https' else {}
+        reader, writer = await asyncio.open_connection(hostname, port, **conn_kwargs)
 
         conn = h11.Connection(our_role=h11.CLIENT)
 
