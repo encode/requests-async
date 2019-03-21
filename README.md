@@ -10,7 +10,7 @@ Brings support for `async`/`await` syntax to Python's fabulous `requests` librar
     <img src="https://codecov.io/gh/encode/requests-async/branch/master/graph/badge.svg" alt="Coverage">
 </a>
 <a href="https://pypi.org/project/requests-async/">
-    <img src="https://badge.fury.io/py/requests-async.svg" alt="Package version">
+    <img src="https://badge.fury.io/py/requests-async.svg?cache0" alt="Package version">
 </a>
 </p>
 
