@@ -8,5 +8,5 @@ pytest
 pytest-asyncio
 pytest-cov
 python-multipart
-starlette
+starlette==0.12.0b1
 uvicorn
