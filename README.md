@@ -22,7 +22,6 @@ Next set of things to deal with:
 * streaming support for uploads and downloads.
 * connection pooling.
 * async cookie persistence, for on-disk cookie stores.
-* make sure authentication works okay (does it use adapters, is the API broken there now?)
 * timeouts
 
 ## Requirements
