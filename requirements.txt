@@ -1,0 +1,12 @@
+h11
+requests
+
+# Testing
+black
+isort
+pytest
+pytest-asyncio
+pytest-cov
+python-multipart
+starlette
+uvicorn
