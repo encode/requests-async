@@ -26,7 +26,7 @@ Brings support for `async`/`await` syntax to Python's fabulous `requests` librar
 $ pip install requests-async
 ```
 
-## Usage:
+## Usage
 
 Just use *the standard requests API*, but use `await` for making requests.
 
@@ -55,6 +55,49 @@ with requests.Session() as session:
 
 The `requests_async` package subclasses `requests`, so you're getting all the
 standard behavior and API you'd expect.
+
+## Mock Requests
+
+In some situations, such as when you're testing a web application, you may
+not want to make actual outgoing network requests, but would prefer instead
+to mock out the endpoints.
+
+You can do this using the `ASGISession`, which allows you to plug into
+any ASGI application, instead of making actual network requests.
+
+```python
+import requests_async
+
+# Create a mock service, with Starlette, Responder, Quart, FastAPI, Bocadillo,
+# or any other ASGI web framework.
+mock_app = ...
+
+if TESTING:
+    # Issue requests to the the mock application.
+    requests = requests_async.ASGISession(mock_app)
+else:
+    # Make live network requests.
+    requests = requests_async.Session()
+```
+
+## Test Client
+
+You can also use `ASGISession` as a test client for any ASGI application.
+
+You'll probably want to install `pytest` and `pytest-asyncio`, or something
+equivalent, to allow you to write `async` test cases.
+
+```python
+from requests_async import ASGISession
+from myproject import app
+import pytest
+
+@pytest.mark.asyncio
+async def test_homepage():
+    client = ASGISession(app)
+    response = await client.get("/")
+    assert response.status_code == 200
+```
 
 ## Limitations
 
