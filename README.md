@@ -2,6 +2,18 @@
 
 Brings support for `async`/`await` syntax to Python's fabulous `requests` library.
 
+<p>
+<a href="https://travis-ci.org/encode/requests-async">
+    <img src="https://travis-ci.org/encode/requests-async.svg?branch=master" alt="Build Status">
+</a>
+<a href="https://codecov.io/gh/encode/requests-async">
+    <img src="https://codecov.io/gh/encode/requests-async/branch/master/graph/badge.svg" alt="Coverage">
+</a>
+<a href="https://pypi.org/project/requests-async/">
+    <img src="https://badge.fury.io/py/requests-async.svg" alt="Package version">
+</a>
+</p>
+
 **This is just a first-pass right now.**
 
 Next set of things to deal with:
