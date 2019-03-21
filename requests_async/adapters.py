@@ -68,7 +68,8 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
                 break
 
         writer.close()
-        await writer.wait_closed()
+        if hasattr(writer, 'wait_closed'):
+            await writer.wait_closed()
 
         resp = urllib3.HTTPResponse(
             body=buffer,
