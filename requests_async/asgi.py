@@ -39,9 +39,9 @@ def _get_reason_phrase(status_code: int) -> str:
 
 
 class ASGIAdapter(requests.adapters.HTTPAdapter):
-    def __init__(self, app, raise_server_exceptions: bool = True) -> None:
+    def __init__(self, app, suppress_exceptions: bool = False) -> None:
         self.app = app
-        self.raise_server_exceptions = raise_server_exceptions
+        self.suppress_exceptions = suppress_exceptions
 
     async def send(  # type: ignore
         self, request: requests.PreparedRequest, *args: typing.Any, **kwargs: typing.Any
@@ -159,10 +159,10 @@ class ASGIAdapter(requests.adapters.HTTPAdapter):
         try:
             await self.app(scope, receive, send)
         except BaseException as exc:
-            if self.raise_server_exceptions:
+            if not self.suppress_exceptions:
                 raise exc from None
 
-        if self.raise_server_exceptions:
+        if not self.suppress_exceptions:
             assert response_started, "TestClient did not receive any response."
         elif not response_started:
             raw_kwargs = {
@@ -188,11 +188,11 @@ class ASGISession(Session):
         self,
         app,
         base_url: str = "http://mockserver",
-        raise_server_exceptions: bool = True,
+        suppress_exceptions: bool = False,
     ) -> None:
         super(ASGISession, self).__init__()
         adapter = ASGIAdapter(
-            app, raise_server_exceptions=raise_server_exceptions
+            app, suppress_exceptions=suppress_exceptions
         )
         self.mount("http://", adapter)
         self.mount("https://", adapter)
