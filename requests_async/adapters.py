@@ -20,9 +20,7 @@ def no_verify():
 
 
 class HTTPAdapter(requests.adapters.HTTPAdapter):
-    async def send(
-        self, request: requests.PreparedRequest, *args: typing.Any, **kwargs: typing.Any
-    ) -> requests.Response:
+    async def send(self, request, stream=False, timeout=None, verify=True,          cert=None, proxies=None) -> requests.Response:
         urlparts = urlparse(request.url)
 
         hostname = urlparts.hostname
@@ -35,7 +33,19 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
         headers = [("host", urlparts.netloc)] + list(request.headers.items())
 
         conn_kwargs = {'ssl': no_verify()} if urlparts.scheme == 'https' else {}
-        reader, writer = await asyncio.open_connection(hostname, port, **conn_kwargs)
+
+        # if timeout is None, operation waits till complete
+        if isinstance(timeout, tuple):
+            connect_timeout, read_timeout = timeout
+        else:
+            connect_timeout = timeout
+            read_timeout = timeout
+
+        get_conn_coro = asyncio.open_connection(hostname, port, **conn_kwargs)
+        try:
+            reader, writer = await asyncio.wait_for(get_conn_coro, connect_timeout)
+        except asyncio.TimeoutError:
+            raise requests.ConnectTimeout()
 
         conn = h11.Connection(our_role=h11.CLIENT)
 
@@ -62,7 +72,10 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
             event_type = type(event)
 
             if event_type is h11.NEED_DATA:
-                data = await reader.read(2048)
+                try:
+                    data = await asyncio.wait_for(reader.read(2048), read_timeout)
+                except asyncio.TimeoutError:
+                    raise requests.ReadTimeout()
                 conn.receive_data(data)
 
             elif event_type is h11.Response:
@@ -92,3 +105,4 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
         )
 
         return self.build_response(request, resp)
+  
