@@ -5,9 +5,15 @@ from .models import Request, Response, PreparedRequest
 from .sessions import Session
 from .status_codes import codes
 from .exceptions import (
-    RequestException, Timeout, URLRequired,
-    TooManyRedirects, HTTPError, ConnectionError,
-    FileModeWarning, ConnectTimeout, ReadTimeout
+    RequestException,
+    Timeout,
+    URLRequired,
+    TooManyRedirects,
+    HTTPError,
+    ConnectionError,
+    FileModeWarning,
+    ConnectTimeout,
+    ReadTimeout,
 )
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
