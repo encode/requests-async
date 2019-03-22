@@ -38,8 +38,13 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
 
         # if timeout is None, operation waits till complete
         timeout = kwargs.get('timeout', None)
-        get_conn_coro = asyncio.open_connection(hostname, port, **conn_kwargs)
+        if isinstance(timeout, tuple):
+            connect_timeout, read_timeout = timeout
+        else:
+            connect_timeout = timeout
+            read_timeout = timeout
 
+        get_conn_coro = asyncio.open_connection(hostname, port, **conn_kwargs)
         try:
             reader, writer = await asyncio.wait_for(get_conn_coro, timeout)
         except asyncio.TimeoutError:
