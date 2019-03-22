@@ -20,9 +20,7 @@ def no_verify():
 
 
 class HTTPAdapter(requests.adapters.HTTPAdapter):
-    async def send(
-        self, request: requests.PreparedRequest, *args: typing.Any, **kwargs: typing.Any
-    ) -> requests.Response:
+    async def send(self, request, stream=False, timeout=None, verify=True,          cert=None, proxies=None) -> requests.Response:
         urlparts = urlparse(request.url)
 
         hostname = urlparts.hostname
@@ -37,7 +35,6 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
         conn_kwargs = {'ssl': no_verify()} if urlparts.scheme == 'https' else {}
 
         # if timeout is None, operation waits till complete
-        timeout = kwargs.get('timeout', None)
         if isinstance(timeout, tuple):
             connect_timeout, read_timeout = timeout
         else:
