@@ -48,7 +48,7 @@ import requests_async as requests
 
 
 with requests.Session() as session:
-    response = await requests.get('https://example.org')
+    response = await session.get('https://example.org')
     print(response.status_code)
     print(response.text)
 ```
