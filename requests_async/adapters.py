@@ -38,7 +38,7 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
 
         # if timeout is None, operation waits till complete
         timeout = kwargs.get('timeout', None)
-        get_conn_coro = self._get_connection(hostname, port, **conn_kwargs)
+        get_conn_coro = asyncio.open_connection(hostname, port, **conn_kwargs)
 
         try:
             reader, writer = await asyncio.wait_for(get_conn_coro, timeout)
@@ -103,7 +103,4 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
         )
 
         return self.build_response(request, resp)
-
-    async def _get_connection(self, hostname, port, **conn_kwargs):
-        reader, writer = await asyncio.open_connection(hostname, port, **conn_kwargs)
-        return reader, writer 
+  
