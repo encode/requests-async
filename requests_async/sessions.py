@@ -4,8 +4,8 @@ from . import adapters
 from requests.exceptions import TooManyRedirects, InvalidSchema, ChunkedEncodingError, ContentDecodingError
 from requests.cookies import extract_cookies_to_jar, merge_cookies
 from requests.status_codes import codes
-from requests.utils import requote_uri
-from urllib.parse import urlparse
+from requests.utils import requote_uri, rewind_body
+from urllib.parse import urljoin, urlparse
 
 
 def to_native_string(string, encoding='ascii'):
