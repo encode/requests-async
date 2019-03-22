@@ -20,7 +20,9 @@ def no_verify():
 
 
 class HTTPAdapter(requests.adapters.HTTPAdapter):
-    async def send(self, request, stream=False, timeout=None, verify=True,          cert=None, proxies=None) -> requests.Response:
+    async def send(
+        self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
+    ) -> requests.Response:
         urlparts = urlparse(request.url)
 
         hostname = urlparts.hostname
@@ -32,18 +34,18 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
             target += "?" + urlparts.query
         headers = [("host", urlparts.netloc)] + list(request.headers.items())
 
-        conn_kwargs = {'ssl': no_verify()} if urlparts.scheme == 'https' else {}
+        conn_kwargs = {"ssl": no_verify()} if urlparts.scheme == "https" else {}
 
-        # if timeout is None, operation waits till complete
         if isinstance(timeout, tuple):
             connect_timeout, read_timeout = timeout
         else:
             connect_timeout = timeout
             read_timeout = timeout
 
-        get_conn_coro = asyncio.open_connection(hostname, port, **conn_kwargs)
         try:
-            reader, writer = await asyncio.wait_for(get_conn_coro, connect_timeout)
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(hostname, port, **conn_kwargs), connect_timeout
+            )
         except asyncio.TimeoutError:
             raise requests.ConnectTimeout()
 
@@ -93,7 +95,7 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
                 break
 
         writer.close()
-        if hasattr(writer, 'wait_closed'):
+        if hasattr(writer, "wait_closed"):
             await writer.wait_closed()
 
         resp = urllib3.HTTPResponse(
@@ -105,4 +107,3 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
         )
 
         return self.build_response(request, resp)
-  

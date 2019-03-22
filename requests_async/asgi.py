@@ -191,9 +191,7 @@ class ASGISession(Session):
         suppress_exceptions: bool = False,
     ) -> None:
         super(ASGISession, self).__init__()
-        adapter = ASGIAdapter(
-            app, suppress_exceptions=suppress_exceptions
-        )
+        adapter = ASGIAdapter(app, suppress_exceptions=suppress_exceptions)
         self.mount("http://", adapter)
         self.mount("https://", adapter)
         self.headers.update({"user-agent": "testclient"})

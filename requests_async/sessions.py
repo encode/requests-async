@@ -1,14 +1,19 @@
 import datetime
 import requests
 from . import adapters
-from requests.exceptions import TooManyRedirects, InvalidSchema, ChunkedEncodingError, ContentDecodingError
+from requests.exceptions import (
+    TooManyRedirects,
+    InvalidSchema,
+    ChunkedEncodingError,
+    ContentDecodingError,
+)
 from requests.cookies import extract_cookies_to_jar, merge_cookies
 from requests.status_codes import codes
 from requests.utils import requote_uri, rewind_body
 from urllib.parse import urljoin, urlparse
 
 
-def to_native_string(string, encoding='ascii'):
+def to_native_string(string, encoding="ascii"):
     """Given a string object, regardless of type, returns a representation of
     that string in the native string type, encoding and decoding where
     necessary. This assumes ASCII unless told otherwise.
@@ -173,8 +178,18 @@ class Session(requests.Session):
 
         return r
 
-    async def resolve_redirects(self, resp, req, stream=False, timeout=None,
-                          verify=True, cert=None, proxies=None, yield_requests=False, **adapter_kwargs):
+    async def resolve_redirects(
+        self,
+        resp,
+        req,
+        stream=False,
+        timeout=None,
+        verify=True,
+        cert=None,
+        proxies=None,
+        yield_requests=False,
+        **adapter_kwargs
+    ):
         """Receives a Response. Returns a generator of Responses or Requests."""
         hist = []  # keep track of history
 
@@ -194,19 +209,21 @@ class Session(requests.Session):
                 resp.raw.read(decode_content=False)
 
             if len(resp.history) >= self.max_redirects:
-                raise TooManyRedirects('Exceeded %s redirects.' % self.max_redirects, response=resp)
+                raise TooManyRedirects(
+                    "Exceeded %s redirects." % self.max_redirects, response=resp
+                )
 
             # Release the connection back into the pool.
             resp.close()
 
             # Handle redirection without scheme (see: RFC 1808 Section 4)
-            if url.startswith('//'):
+            if url.startswith("//"):
                 parsed_rurl = urlparse(resp.url)
-                url = '%s:%s' % (to_native_string(parsed_rurl.scheme), url)
+                url = "%s:%s" % (to_native_string(parsed_rurl.scheme), url)
 
             # Normalize url case and attach previous fragment if needed (RFC 7231 7.1.2)
             parsed = urlparse(url)
-            if parsed.fragment == '' and previous_fragment:
+            if parsed.fragment == "" and previous_fragment:
                 parsed = parsed._replace(fragment=previous_fragment)
             elif parsed.fragment:
                 previous_fragment = parsed.fragment
@@ -225,16 +242,19 @@ class Session(requests.Session):
             self.rebuild_method(prepared_request, resp)
 
             # https://github.com/requests/requests/issues/1084
-            if resp.status_code not in (codes.temporary_redirect, codes.permanent_redirect):
+            if resp.status_code not in (
+                codes.temporary_redirect,
+                codes.permanent_redirect,
+            ):
                 # https://github.com/requests/requests/issues/3490
-                purged_headers = ('Content-Length', 'Content-Type', 'Transfer-Encoding')
+                purged_headers = ("Content-Length", "Content-Type", "Transfer-Encoding")
                 for header in purged_headers:
                     prepared_request.headers.pop(header, None)
                 prepared_request.body = None
 
             headers = prepared_request.headers
             try:
-                del headers['Cookie']
+                del headers["Cookie"]
             except KeyError:
                 pass
 
@@ -252,9 +272,8 @@ class Session(requests.Session):
             # A failed tell() sets `_body_position` to `object()`. This non-None
             # value ensures `rewindable` will be True, allowing us to raise an
             # UnrewindableBodyError, instead of hanging the connection.
-            rewindable = (
-                prepared_request._body_position is not None and
-                ('Content-Length' in headers or 'Transfer-Encoding' in headers)
+            rewindable = prepared_request._body_position is not None and (
+                "Content-Length" in headers or "Transfer-Encoding" in headers
             )
 
             # Attempt to rewind consumed file-like object.

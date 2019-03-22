@@ -243,13 +243,15 @@ async def test_suppress_execeptions():
 @pytest.mark.asyncio
 async def test_template_responses():
     async def app(scope, receive, send):
-        response = HTMLResponse('<html>Hello, world</html>')
+        response = HTMLResponse("<html>Hello, world</html>")
         await response(scope, receive, send)
-        await send({
-            "type": "http.response.template",
-            "template": "index.html",
-            "context": {"username": "tom"},
-        })
+        await send(
+            {
+                "type": "http.response.template",
+                "template": "index.html",
+                "context": {"username": "tom"},
+            }
+        )
 
     client = ASGISession(app)
     response = await client.get("/")
