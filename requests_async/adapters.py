@@ -46,7 +46,7 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
 
         get_conn_coro = asyncio.open_connection(hostname, port, **conn_kwargs)
         try:
-            reader, writer = await asyncio.wait_for(get_conn_coro, timeout)
+            reader, writer = await asyncio.wait_for(get_conn_coro, connect_timeout)
         except asyncio.TimeoutError:
             raise requests.ConnectTimeout()
 
@@ -76,7 +76,7 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
 
             if event_type is h11.NEED_DATA:
                 try:
-                    data = await asyncio.wait_for(reader.read(2048), timeout)
+                    data = await asyncio.wait_for(reader.read(2048), read_timeout)
                 except asyncio.TimeoutError:
                     raise requests.ReadTimeout()
                 conn.receive_data(data)
