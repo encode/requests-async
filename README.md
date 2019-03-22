@@ -103,7 +103,6 @@ async def test_homepage():
 
 * Streaming uploads and downloads are unsupported.
 * SSL verification is not currently enabled.
-* No timeout support yet.
 
 See the [issues list][issues] for more details.
 
