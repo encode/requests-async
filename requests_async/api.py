@@ -2,7 +2,7 @@ from . import sessions
 
 
 async def request(method, url, **kwargs):
-    with sessions.Session() as session:
+    async with sessions.Session() as session:
         return await session.request(method=method, url=url, **kwargs)
 
 

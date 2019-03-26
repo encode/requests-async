@@ -111,3 +111,6 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
         )
 
         return self.build_response(request, resp)
+
+    async def close(self):
+        pass
