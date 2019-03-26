@@ -1,4 +1,5 @@
 import asyncio
+from http.client import _encode
 import io
 import ssl
 import typing
@@ -56,7 +57,10 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
         writer.write(data)
 
         if request.body:
-            message = h11.Data(data=request.body.encode("utf-8"))
+            body = (
+                _encode(request.body) if isinstance(request.body, str) else request.body
+            )
+            message = h11.Data(data=body)
             data = conn.send(message)
             writer.write(data)
 

@@ -31,6 +31,13 @@ async def echo_form_data(request):
     )
 
 
+async def echo_json(request):
+    json = await request.json()
+    return JSONResponse(
+        {"method": request.method, "url": str(request.url), "json": json}
+    )
+
+
 async def echo_headers(request):
     return JSONResponse(
         {"headers": {key: value for key, value in request.headers.items()}}
@@ -56,6 +63,7 @@ routes = [
         "/", echo_request, methods=["GET", "DELETE", "OPTIONS", "POST", "PUT", "PATCH"]
     ),
     Route("/echo_form_data", echo_form_data, methods=["POST", "PUT", "PATCH"]),
+    Route("/echo_json", echo_json, methods=["POST", "PUT", "PATCH"]),
     Route("/echo_headers", echo_headers),
     Route("/redirect1", redirect1, name="redirect1"),
     Route("/redirect2", redirect2, name="redirect2"),
