@@ -165,13 +165,14 @@ class Session(requests.Session):
             r.history = history
 
         # If redirects aren't being followed, store the response on the Request for Response.next().
-        # if not allow_redirects:
-        #     try:
-        #         r._next = next(
-        #             self.resolve_redirects(r, request, yield_requests=True, **kwargs)
-        #         )
-        #     except StopIteration:
-        #         pass
+        if not allow_redirects:
+            try:
+                redirect_gen = self.resolve_redirects(
+                    r, request, yield_requests=True, **kwargs
+                )
+                r._next = await redirect_gen.__anext__()
+            except StopAsyncIteration:
+                pass
 
         if not stream:
             r.content

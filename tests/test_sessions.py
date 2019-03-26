@@ -35,3 +35,16 @@ async def test_session(server):
         response = await session.head(url)
         assert response.status_code == 200
         assert response.text == ""
+
+
+@pytest.mark.asyncio
+async def test_session_redirection_disallowed(server):
+    url = "http://127.0.0.1:8000/redirect1"
+    with requests_async.Session() as session:
+        response = await session.get(url, allow_redirects=False)
+        assert response.status_code == 302
+        response = await session.send(response.next, allow_redirects=False)
+        assert response.status_code == 302
+        response = await session.send(response.next, allow_redirects=False)
+        assert response.status_code == 200
+        assert response.url == "http://127.0.0.1:8000/redirect3"
