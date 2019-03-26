@@ -41,13 +41,13 @@ print(response.status_code)
 print(response.text)
 ```
 
-Or use explicit sessions.
+Or use explicit sessions, with an async context manager.
 
 ```python
 import requests_async as requests
 
 
-with requests.Session() as session:
+async with requests.Session() as session:
     response = await session.get('https://example.org')
     print(response.status_code)
     print(response.text)
