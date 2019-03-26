@@ -304,3 +304,16 @@ class Session(requests.Session):
                 # extract redirect url, if any, for the next loop
                 url = self.get_redirect_target(resp)
                 yield resp
+
+    async def close(self):
+        for v in self.adapters.values():
+            await v.close()
+
+    def __enter__(self):
+        raise NotImplementedError("Use 'async with Session', instead of 'with Session'")
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        await self.close()
