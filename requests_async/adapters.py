@@ -5,19 +5,46 @@ import ssl
 import typing
 from urllib.parse import urlparse
 
+import os
 import h11
 import requests
 import urllib3
 
 
-def no_verify():
-    # ssl.create_default_context()
-    sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-    sslcontext.options |= ssl.OP_NO_SSLv2
-    sslcontext.options |= ssl.OP_NO_SSLv3
-    sslcontext.options |= ssl.OP_NO_COMPRESSION
-    sslcontext.set_default_verify_paths()
-    return sslcontext
+def no_verify_context():
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context.options |= ssl.OP_NO_SSLv2
+    context.options |= ssl.OP_NO_SSLv3
+    context.options |= ssl.OP_NO_COMPRESSION
+    context.set_default_verify_paths()
+    return context
+
+
+def verify_context(cert):
+    ca_bundle_path = requests.utils.DEFAULT_CA_BUNDLE_PATH
+
+    context = ssl.create_default_context()
+    if os.path.isfile(ca_bundle_path):
+        context.load_verify_locations(cafile=ca_bundle_path)
+    elif os.path.isdir(ca_bundle_path):
+        context.load_verify_locations(capath=ca_bundle_path)
+
+    if cert is not None:
+        if isinstance(cert, str):
+            context.load_cert_chain(certfile=cert)
+        else:
+            context.load_cert_chain(certfile=cert[0], keyfile=cert[1])
+
+    return context
+
+
+def get_ssl(urlparts, verify, cert):
+    if urlparts.scheme != 'https':
+        return False
+
+    if not verify:
+        return no_verify_context()
+    return verify_context(cert)
 
 
 class HTTPAdapter(requests.adapters.HTTPAdapter):
@@ -35,7 +62,7 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
             target += "?" + urlparts.query
         headers = [("host", urlparts.netloc)] + list(request.headers.items())
 
-        conn_kwargs = {"ssl": no_verify()} if urlparts.scheme == "https" else {}
+        ssl = get_ssl(urlparts, verify, cert)
 
         if isinstance(timeout, tuple):
             connect_timeout, read_timeout = timeout
@@ -45,7 +72,7 @@ class HTTPAdapter(requests.adapters.HTTPAdapter):
 
         try:
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(hostname, port, **conn_kwargs), connect_timeout
+                asyncio.open_connection(hostname, port, ssl=ssl), connect_timeout
             )
         except asyncio.TimeoutError:
             raise requests.ConnectTimeout()
