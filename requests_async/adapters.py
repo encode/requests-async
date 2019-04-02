@@ -20,8 +20,16 @@ def no_verify_context():
     return context
 
 
-def verify_context(cert):
-    ca_bundle_path = requests.utils.DEFAULT_CA_BUNDLE_PATH
+def verify_context(verify, cert):
+    if verify is True:
+        ca_bundle_path = requests.utils.DEFAULT_CA_BUNDLE_PATH
+    elif os.path.exists(verify):
+        ca_bundle_path = verify
+    else:
+        raise IOError(
+            "Could not find a suitable TLS CA certificate bundle, "
+            "invalid path: {}".format(verify)
+        )
 
     context = ssl.create_default_context()
     if os.path.isfile(ca_bundle_path):
@@ -44,7 +52,7 @@ def get_ssl(urlparts, verify, cert):
 
     if not verify:
         return no_verify_context()
-    return verify_context(cert)
+    return verify_context(verify, cert)
 
 
 class HTTPAdapter(requests.adapters.HTTPAdapter):
