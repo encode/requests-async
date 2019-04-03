@@ -1,5 +1,6 @@
-import requests_async
 import pytest
+
+import requests_async
 
 
 @pytest.mark.asyncio

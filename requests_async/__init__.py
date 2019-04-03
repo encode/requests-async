@@ -1,19 +1,19 @@
 from .adapters import HTTPAdapter
-from .api import request, get, head, post, patch, put, delete, options
+from .api import delete, get, head, options, patch, post, put, request
 from .asgi import ASGISession
-from .models import Request, Response, PreparedRequest
-from .sessions import Session
-from .status_codes import codes
 from .exceptions import (
+    ConnectionError,
+    ConnectTimeout,
+    FileModeWarning,
+    HTTPError,
+    ReadTimeout,
     RequestException,
     Timeout,
-    URLRequired,
     TooManyRedirects,
-    HTTPError,
-    ConnectionError,
-    FileModeWarning,
-    ConnectTimeout,
-    ReadTimeout,
+    URLRequired,
 )
+from .models import PreparedRequest, Request, Response
+from .sessions import Session
+from .status_codes import codes
 
 __version__ = "0.2.0"

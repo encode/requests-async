@@ -1,76 +1,26 @@
 import asyncio
-from http.client import _encode
 import io
+import os
 import ssl
 import typing
+from http.client import _encode
 from urllib.parse import urlparse
 
-import os
 import h11
 import requests
 import urllib3
 
-
-def no_verify_context():
-    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-    context.options |= ssl.OP_NO_SSLv2
-    context.options |= ssl.OP_NO_SSLv3
-    context.options |= ssl.OP_NO_COMPRESSION
-    context.set_default_verify_paths()
-    return context
-
-
-def verify_context(verify, cert):
-    if verify is True:
-        ca_bundle_path = requests.utils.DEFAULT_CA_BUNDLE_PATH
-    elif os.path.exists(verify):
-        ca_bundle_path = verify
-    else:
-        raise IOError(
-            "Could not find a suitable TLS CA certificate bundle, "
-            "invalid path: {}".format(verify)
-        )
-
-    context = ssl.create_default_context()
-    if os.path.isfile(ca_bundle_path):
-        context.load_verify_locations(cafile=ca_bundle_path)
-    elif os.path.isdir(ca_bundle_path):
-        context.load_verify_locations(capath=ca_bundle_path)
-
-    if cert is not None:
-        if isinstance(cert, str):
-            context.load_cert_chain(certfile=cert)
-        else:
-            context.load_cert_chain(certfile=cert[0], keyfile=cert[1])
-
-    return context
-
-
-def get_ssl(urlparts, verify, cert):
-    if urlparts.scheme != 'https':
-        return False
-
-    if not verify:
-        return no_verify_context()
-    return verify_context(verify, cert)
+from .connections import ConnectionPool
 
 
 class HTTPAdapter:
+    def __init__(self):
+        self.pool = ConnectionPool()
+
     async def send(
         self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
     ) -> requests.Response:
         urlparts = urlparse(request.url)
-
-        hostname = urlparts.hostname
-        port = urlparts.port
-        if port is None:
-            port = {"http": 80, "https": 443}[urlparts.scheme]
-        target = urlparts.path
-        if urlparts.query:
-            target += "?" + urlparts.query
-        headers = [("host", urlparts.netloc)] + list(request.headers.items())
-
-        ssl = get_ssl(urlparts, verify, cert)
 
         if isinstance(timeout, tuple):
             connect_timeout, read_timeout = timeout
@@ -78,12 +28,14 @@ class HTTPAdapter:
             connect_timeout = timeout
             read_timeout = timeout
 
-        try:
-            reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(hostname, port, ssl=ssl), connect_timeout
-            )
-        except asyncio.TimeoutError:
-            raise requests.ConnectTimeout()
+        reader, writer = await self.pool.get_connection(
+            url=urlparts, verify=verify, cert=cert, timeout=connect_timeout
+        )
+
+        target = urlparts.path
+        if urlparts.query:
+            target += "?" + urlparts.query
+        headers = [("host", urlparts.netloc)] + list(request.headers.items())
 
         conn = h11.Connection(our_role=h11.CLIENT)
 
@@ -162,10 +114,12 @@ class HTTPAdapter:
         response = requests.models.Response()
 
         # Fallback to None if there's no status_code, for whatever reason.
-        response.status_code = getattr(resp, 'status', None)
+        response.status_code = getattr(resp, "status", None)
 
         # Make headers case-insensitive.
-        response.headers = requests.structures.CaseInsensitiveDict(getattr(resp, 'headers', {}))
+        response.headers = requests.structures.CaseInsensitiveDict(
+            getattr(resp, "headers", {})
+        )
 
         # Set encoding.
         response.encoding = requests.utils.get_encoding_from_headers(response.headers)
@@ -173,7 +127,7 @@ class HTTPAdapter:
         response.reason = response.raw.reason
 
         if isinstance(req.url, bytes):
-            response.url = req.url.decode('utf-8')
+            response.url = req.url.decode("utf-8")
         else:
             response.url = req.url
 

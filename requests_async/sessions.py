@@ -1,16 +1,18 @@
 import datetime
+from urllib.parse import urljoin, urlparse
+
 import requests
-from . import adapters
+from requests.cookies import extract_cookies_to_jar, merge_cookies
 from requests.exceptions import (
-    TooManyRedirects,
-    InvalidSchema,
     ChunkedEncodingError,
     ContentDecodingError,
+    InvalidSchema,
+    TooManyRedirects,
 )
-from requests.cookies import extract_cookies_to_jar, merge_cookies
 from requests.status_codes import codes
 from requests.utils import requote_uri, rewind_body
-from urllib.parse import urljoin, urlparse
+
+from . import adapters
 
 
 def to_native_string(string, encoding="ascii"):

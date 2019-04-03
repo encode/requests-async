@@ -1,1 +1,1 @@
-from requests.models import Request, Response, PreparedRequest
+from requests.models import PreparedRequest, Request, Response

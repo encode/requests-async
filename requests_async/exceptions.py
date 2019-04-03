@@ -1,11 +1,11 @@
 from requests.exceptions import (
+    ConnectionError,
+    ConnectTimeout,
+    FileModeWarning,
+    HTTPError,
+    ReadTimeout,
     RequestException,
     Timeout,
-    URLRequired,
     TooManyRedirects,
-    HTTPError,
-    ConnectionError,
-    FileModeWarning,
-    ConnectTimeout,
-    ReadTimeout,
+    URLRequired,
 )

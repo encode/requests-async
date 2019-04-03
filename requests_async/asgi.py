@@ -8,7 +8,9 @@ import threading
 import types
 import typing
 from urllib.parse import unquote, urljoin, urlsplit
+
 import requests
+
 from .sessions import Session
 
 

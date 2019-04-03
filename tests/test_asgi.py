@@ -1,13 +1,11 @@
 import asyncio
 
 import pytest
-
 from starlette.requests import ClientDisconnect, Request
-from starlette.responses import JSONResponse, HTMLResponse, Response
+from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.testclient import TestClient
 
 from requests_async import ASGISession
-
 
 app = JSONResponse({"hello": "world"})
 

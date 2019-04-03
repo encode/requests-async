@@ -1,10 +1,9 @@
 import asyncio
-import pytest
 
+import pytest
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse, RedirectResponse
 from starlette.routing import Route
-
 from uvicorn.config import Config
 from uvicorn.main import Server
 
