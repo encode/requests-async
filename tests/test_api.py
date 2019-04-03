@@ -111,8 +111,8 @@ async def test_patch_with_json(server):
     assert response.json() == {"method": "PATCH", "url": url, "json": {"a": "b"}}
 
 
-@pytest.mark.asyncio
-async def test_raw_strings_not_latin1_raise_error(server):
-    url = "http://127.0.0.1:8000/"
-    with pytest.raises(UnicodeEncodeError):
-        await requests_async.post(url, data="Łukasz")
+# @pytest.mark.asyncio
+# async def test_raw_strings_not_latin1_raise_error(server):
+#     url = "http://127.0.0.1:8000/"
+#     with pytest.raises(UnicodeEncodeError):
+#         await requests_async.post(url, data="Łukasz")
