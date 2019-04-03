@@ -5,7 +5,7 @@ import ssl
 import requests
 
 
-class ConnectionPool:
+class ConnectionManager:
     async def get_connection(self, url, verify, cert, timeout):
         hostname = url.hostname
         port = url.port
@@ -15,11 +15,13 @@ class ConnectionPool:
         ssl = await self.get_ssl_context(url, verify, cert)
 
         try:
-            return await asyncio.wait_for(
+            reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(hostname, port, ssl=ssl), timeout
             )
         except asyncio.TimeoutError:
             raise requests.ConnectTimeout()
+
+        return HTTPConnection(reader, writer)
 
     async def get_ssl_context(self, url, verify, cert):
         """
@@ -65,3 +67,23 @@ class ConnectionPool:
                 context.load_cert_chain(certfile=cert[0], keyfile=cert[1])
 
         return context
+
+
+class HTTPConnection:
+    def __init__(self, reader, writer):
+        self.reader = reader
+        self.writer = writer
+
+    async def read(self, num_bytes, timeout):
+        try:
+            return await asyncio.wait_for(self.reader.read(num_bytes), timeout)
+        except asyncio.TimeoutError:
+            raise requests.ReadTimeout()
+
+    def write(self, data):
+        self.writer.write(data)
+
+    async def close(self):
+        self.writer.close()
+        if hasattr(self.writer, "wait_closed"):
+            await self.writer.wait_closed()
