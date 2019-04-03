@@ -3,6 +3,7 @@ import os
 import ssl
 
 import requests
+import h11
 
 
 class ConnectionManager:
@@ -73,14 +74,23 @@ class HTTPConnection:
     def __init__(self, reader, writer):
         self.reader = reader
         self.writer = writer
+        self.state = h11.Connection(our_role=h11.CLIENT)
 
-    async def read(self, num_bytes, timeout):
-        try:
-            return await asyncio.wait_for(self.reader.read(num_bytes), timeout)
-        except asyncio.TimeoutError:
-            raise requests.ReadTimeout()
+    async def receive_event(self, timeout):
+        event = self.state.next_event()
 
-    def write(self, data):
+        while type(event) is h11.NEED_DATA:
+            try:
+                data = await asyncio.wait_for(self.reader.read(2048), timeout)
+            except asyncio.TimeoutError:
+                raise requests.ReadTimeout()
+            self.state.receive_data(data)
+            event = self.state.next_event()
+    
+        return event
+
+    async def send_event(self, message):
+        data = self.state.send(message)
         self.writer.write(data)
 
     async def close(self):

@@ -37,23 +37,18 @@ class HTTPAdapter:
             target += "?" + urlparts.query
         headers = [("host", urlparts.netloc)] + list(request.headers.items())
 
-        h11_state = h11.Connection(our_role=h11.CLIENT)
-
         message = h11.Request(method=request.method, target=target, headers=headers)
-        data = h11_state.send(message)
-        connection.write(data)
+        await connection.send_event(message)
 
         if request.body:
             body = (
                 _encode(request.body) if isinstance(request.body, str) else request.body
             )
             message = h11.Data(data=body)
-            data = h11_state.send(message)
-            connection.write(data)
+            await connection.send_event(message)
 
         message = h11.EndOfMessage()
-        data = h11_state.send(message)
-        connection.write(data)
+        await connection.send_event(message)
 
         status_code = 0
         headers = []
@@ -61,14 +56,10 @@ class HTTPAdapter:
         buffer = io.BytesIO()
 
         while True:
-            event = h11_state.next_event()
+            event = await connection.receive_event(read_timeout)
             event_type = type(event)
 
-            if event_type is h11.NEED_DATA:
-                data = await connection.read(2048, read_timeout)
-                h11_state.receive_data(data)
-
-            elif event_type is h11.Response:
+            if event_type is h11.Response:
                 status_code = event.status_code
                 headers = [
                     (key.decode(), value.decode()) for key, value in event.headers
