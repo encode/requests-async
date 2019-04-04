@@ -13,16 +13,22 @@ class ConnectionManager:
         if port is None:
             port = {"http": 80, "https": 443}[url.scheme]
 
+        if isinstance(timeout, tuple):
+            connect_timeout, read_timeout = timeout
+        else:
+            connect_timeout = timeout
+            read_timeout = timeout
+
         ssl = await self.get_ssl_context(url, verify, cert)
 
         try:
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(hostname, port, ssl=ssl), timeout
+                asyncio.open_connection(hostname, port, ssl=ssl), connect_timeout
             )
         except asyncio.TimeoutError:
             raise requests.ConnectTimeout()
 
-        return HTTPConnection(reader, writer)
+        return HTTPConnection(reader, writer, timeout=read_timeout)
 
     async def get_ssl_context(self, url, verify, cert):
         """
@@ -71,22 +77,23 @@ class ConnectionManager:
 
 
 class HTTPConnection:
-    def __init__(self, reader, writer):
+    def __init__(self, reader, writer, timeout):
         self.reader = reader
         self.writer = writer
+        self.timeout = timeout
         self.state = h11.Connection(our_role=h11.CLIENT)
 
-    async def receive_event(self, timeout):
+    async def receive_event(self):
         event = self.state.next_event()
 
         while type(event) is h11.NEED_DATA:
             try:
-                data = await asyncio.wait_for(self.reader.read(2048), timeout)
+                data = await asyncio.wait_for(self.reader.read(2048), self.timeout)
             except asyncio.TimeoutError:
                 raise requests.ReadTimeout()
             self.state.receive_data(data)
             event = self.state.next_event()
-    
+
         return event
 
     async def send_event(self, message):

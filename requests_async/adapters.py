@@ -22,14 +22,8 @@ class HTTPAdapter:
     ) -> requests.Response:
         urlparts = urlparse(request.url)
 
-        if isinstance(timeout, tuple):
-            connect_timeout, read_timeout = timeout
-        else:
-            connect_timeout = timeout
-            read_timeout = timeout
-
         connection = await self.manager.get_connection(
-            url=urlparts, verify=verify, cert=cert, timeout=connect_timeout
+            url=urlparts, verify=verify, cert=cert, timeout=timeout
         )
 
         target = urlparts.path
@@ -56,7 +50,7 @@ class HTTPAdapter:
         buffer = io.BytesIO()
 
         while True:
-            event = await connection.receive_event(read_timeout)
+            event = await connection.receive_event()
             event_type = type(event)
 
             if event_type is h11.Response:
