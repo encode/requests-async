@@ -10,12 +10,12 @@ import h11
 import requests
 import urllib3
 
-from .connections import ConnectionPool
+from .connections import ConnectionManager
 
 
 class HTTPAdapter:
     def __init__(self):
-        self.pool = ConnectionPool()
+        self.manager = ConnectionManager()
 
     async def send(
         self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
@@ -28,7 +28,7 @@ class HTTPAdapter:
             connect_timeout = timeout
             read_timeout = timeout
 
-        reader, writer = await self.pool.get_connection(
+        connection = await self.manager.get_connection(
             url=urlparts, verify=verify, cert=cert, timeout=connect_timeout
         )
 
@@ -37,23 +37,18 @@ class HTTPAdapter:
             target += "?" + urlparts.query
         headers = [("host", urlparts.netloc)] + list(request.headers.items())
 
-        conn = h11.Connection(our_role=h11.CLIENT)
-
         message = h11.Request(method=request.method, target=target, headers=headers)
-        data = conn.send(message)
-        writer.write(data)
+        await connection.send_event(message)
 
         if request.body:
             body = (
                 _encode(request.body) if isinstance(request.body, str) else request.body
             )
             message = h11.Data(data=body)
-            data = conn.send(message)
-            writer.write(data)
+            await connection.send_event(message)
 
         message = h11.EndOfMessage()
-        data = conn.send(message)
-        writer.write(data)
+        await connection.send_event(message)
 
         status_code = 0
         headers = []
@@ -61,17 +56,10 @@ class HTTPAdapter:
         buffer = io.BytesIO()
 
         while True:
-            event = conn.next_event()
+            event = await connection.receive_event(read_timeout)
             event_type = type(event)
 
-            if event_type is h11.NEED_DATA:
-                try:
-                    data = await asyncio.wait_for(reader.read(2048), read_timeout)
-                except asyncio.TimeoutError:
-                    raise requests.ReadTimeout()
-                conn.receive_data(data)
-
-            elif event_type is h11.Response:
+            if event_type is h11.Response:
                 status_code = event.status_code
                 headers = [
                     (key.decode(), value.decode()) for key, value in event.headers
@@ -85,9 +73,7 @@ class HTTPAdapter:
                 buffer.seek(0)
                 break
 
-        writer.close()
-        if hasattr(writer, "wait_closed"):
-            await writer.wait_closed()
+        await connection.close()
 
         resp = urllib3.HTTPResponse(
             body=buffer,
