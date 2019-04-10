@@ -36,7 +36,7 @@ class ConnectionManager:
 
         # Run the SSL loading in a threadpool, since it makes disk accesses.
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.get_ssl_context_verify, cert)
+        return await loop.run_in_executor(None, self.get_ssl_context_verify, verify, cert)
 
     def get_ssl_context_no_verify(self):
         """
@@ -49,11 +49,19 @@ class ConnectionManager:
         context.set_default_verify_paths()
         return context
 
-    def get_ssl_context_verify(self, cert):
+    def get_ssl_context_verify(self, verify, cert):
         """
         Return an SSL context for verified connections.
         """
-        ca_bundle_path = requests.utils.DEFAULT_CA_BUNDLE_PATH
+        if verify is True:
+            ca_bundle_path = requests.utils.DEFAULT_CA_BUNDLE_PATH
+        elif os.path.exists(verify):
+            ca_bundle_path = verify
+        else:
+            raise IOError(
+                "Could not find a suitable TLS CA certificate bundle, "
+                "invalid path: {}".format(verify)
+            )
 
         context = ssl.create_default_context()
         if os.path.isfile(ca_bundle_path):
@@ -86,7 +94,7 @@ class HTTPConnection:
                 raise requests.ReadTimeout()
             self.state.receive_data(data)
             event = self.state.next_event()
-    
+
         return event
 
     async def send_event(self, message):
