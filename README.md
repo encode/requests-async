@@ -73,7 +73,7 @@ import requests_async
 mock_app = ...
 
 if TESTING:
-    # Issue requests to the the mock application.
+    # Issue requests to the mocked application.
     requests = requests_async.ASGISession(mock_app)
 else:
     # Make live network requests.
