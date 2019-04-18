@@ -7,10 +7,9 @@ from http.client import _encode
 from urllib.parse import urlparse
 
 import h11
+import httpcore
 import requests
 import urllib3
-
-import httpcore
 
 
 class HTTPAdapter:
@@ -25,13 +24,29 @@ class HTTPAdapter:
         url = request.url
         headers = [(_encode(k), _encode(v)) for k, v in request.headers.items()]
         if not request.body:
-            body = b''
+            body = b""
         elif isinstance(request.body, str):
             body = _encode(request.body)
         else:
             body = request.body
 
-        response = await self.pool.request(method, url, headers=headers, body=body, stream=stream)
+        if isinstance(timeout, tuple):
+            timeout_kwargs = {"connect_timeout": timeout[0], "read_timeout": timeout[1]}
+        else:
+            timeout_kwargs = {"connect_timeout": timeout, "read_timeout": timeout}
+
+        ssl = httpcore.SSLConfig(cert=cert, verify=verify)
+        timeout = httpcore.TimeoutConfig(**timeout_kwargs)
+
+        response = await self.pool.request(
+            method,
+            url,
+            headers=headers,
+            body=body,
+            stream=stream,
+            ssl=ssl,
+            timeout=timeout,
+        )
 
         return self.build_response(request, response)
 
@@ -53,9 +68,9 @@ class HTTPAdapter:
         response.status_code = resp.status_code
 
         # Make headers case-insensitive.
-        response.headers = requests.structures.CaseInsensitiveDict([
-            (k.decode('latin1'), v.decode('latin1')) for k, v in resp.headers
-        ])
+        response.headers = requests.structures.CaseInsensitiveDict(
+            [(k.decode("latin1"), v.decode("latin1")) for k, v in resp.headers]
+        )
 
         # Set encoding.
         response.encoding = requests.utils.get_encoding_from_headers(response.headers)
