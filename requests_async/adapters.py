@@ -53,7 +53,9 @@ class HTTPAdapter:
         response.status_code = resp.status_code
 
         # Make headers case-insensitive.
-        response.headers = requests.structures.CaseInsensitiveDict(resp.headers)
+        response.headers = requests.structures.CaseInsensitiveDict([
+            (k.decode('latin1'), v.decode('latin1')) for k, v in resp.headers
+        ])
 
         # Set encoding.
         response.encoding = requests.utils.get_encoding_from_headers(response.headers)
