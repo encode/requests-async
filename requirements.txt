@@ -1,4 +1,4 @@
-h11
+httpcore
 requests
 
 # Testing

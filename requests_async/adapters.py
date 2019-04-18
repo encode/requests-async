@@ -10,80 +10,36 @@ import h11
 import requests
 import urllib3
 
-from .connections import ConnectionManager
+import httpcore
 
 
 class HTTPAdapter:
     def __init__(self):
-        self.manager = ConnectionManager()
+        self.pool = httpcore.ConnectionPool()
 
     async def send(
         self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
     ) -> requests.Response:
-        urlparts = urlparse(request.url)
 
-        connection = await self.manager.get_connection(
-            url=urlparts, verify=verify, cert=cert, timeout=timeout
-        )
+        method = request.method
+        url = request.url
+        headers = [(_encode(k), _encode(v)) for k, v in request.headers.items()]
+        if not request.body:
+            body = b''
+        elif isinstance(request.body, str):
+            body = _encode(request.body)
+        else:
+            body = request.body
 
-        target = urlparts.path
-        if urlparts.query:
-            target += "?" + urlparts.query
-        headers = [("host", urlparts.netloc)] + list(request.headers.items())
+        response = await self.pool.request(method, url, headers=headers, body=body, stream=stream)
 
-        message = h11.Request(method=request.method, target=target, headers=headers)
-        await connection.send_event(message)
-
-        if request.body:
-            body = (
-                _encode(request.body) if isinstance(request.body, str) else request.body
-            )
-            message = h11.Data(data=body)
-            await connection.send_event(message)
-
-        message = h11.EndOfMessage()
-        await connection.send_event(message)
-
-        status_code = 0
-        headers = []
-        reason = b""
-        buffer = io.BytesIO()
-
-        while True:
-            event = await connection.receive_event()
-            event_type = type(event)
-
-            if event_type is h11.Response:
-                status_code = event.status_code
-                headers = [
-                    (key.decode(), value.decode()) for key, value in event.headers
-                ]
-                reason = event.reason
-
-            elif event_type is h11.Data:
-                buffer.write(event.data)
-
-            elif event_type is h11.EndOfMessage:
-                buffer.seek(0)
-                break
-
-        await connection.close()
-
-        resp = urllib3.HTTPResponse(
-            body=buffer,
-            headers=headers,
-            status=status_code,
-            reason=reason,
-            preload_content=False,
-        )
-
-        return self.build_response(request, resp)
+        return self.build_response(request, response)
 
     async def close(self):
-        pass
+        await self.pool.close()
 
     def build_response(self, req, resp):
-        """Builds a :class:`Response <requests.Response>` object from a urllib3
+        """Builds a :class:`Response <requests.Response>` object from an httpcore
         response. This should not be called from user code, and is only exposed
         for use when subclassing the
         :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`
@@ -94,17 +50,15 @@ class HTTPAdapter:
         response = requests.models.Response()
 
         # Fallback to None if there's no status_code, for whatever reason.
-        response.status_code = getattr(resp, "status", None)
+        response.status_code = resp.status_code
 
         # Make headers case-insensitive.
-        response.headers = requests.structures.CaseInsensitiveDict(
-            getattr(resp, "headers", {})
-        )
+        response.headers = requests.structures.CaseInsensitiveDict(resp.headers)
 
         # Set encoding.
         response.encoding = requests.utils.get_encoding_from_headers(response.headers)
-        response.raw = resp
-        response.reason = response.raw.reason
+        response._content = resp.body
+        response.reason = resp.reason
 
         if isinstance(req.url, bytes):
             response.url = req.url.decode("utf-8")

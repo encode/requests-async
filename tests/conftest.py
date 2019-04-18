@@ -82,4 +82,5 @@ async def server():
             await asyncio.sleep(0.0001)
         yield server
     finally:
-        task.cancel()
+        server.should_exit = True
+        await task
