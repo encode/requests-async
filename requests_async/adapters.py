@@ -11,6 +11,8 @@ import httpcore
 import requests
 import urllib3
 
+from .exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+
 
 class HTTPAdapter:
     def __init__(self):
@@ -38,15 +40,22 @@ class HTTPAdapter:
         ssl = httpcore.SSLConfig(cert=cert, verify=verify)
         timeout = httpcore.TimeoutConfig(**timeout_kwargs)
 
-        response = await self.pool.request(
-            method,
-            url,
-            headers=headers,
-            body=body,
-            stream=stream,
-            ssl=ssl,
-            timeout=timeout,
-        )
+        try:
+            response = await self.pool.request(
+                method,
+                url,
+                headers=headers,
+                body=body,
+                stream=stream,
+                ssl=ssl,
+                timeout=timeout,
+            )
+        except (httpcore.BadRequest, socket.error) as err:
+            raise ConnectionError(err, request=request)
+        except httpcore.ConnectTimeout as err:
+            raise ConnectTimeout(err, request=request)
+        except httpcore.ReadTimeout as err:
+            raise ReadTimeout(err, request=request)
 
         return self.build_response(request, response)
 
