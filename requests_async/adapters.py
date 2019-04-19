@@ -27,6 +27,7 @@ class HTTPAdapter:
         method = request.method
         url = request.url
         headers = [(_encode(k), _encode(v)) for k, v in request.headers.items()]
+
         if not request.body:
             body = b""
         elif isinstance(request.body, str):

@@ -54,7 +54,7 @@ async with requests.Session() as session:
 The `requests_async` package subclasses `requests`, so you're getting all the
 standard behavior and API you'd expect.
 
-## Streaming Responses
+## Streaming responses & requests
 
 The `iter_content()` and `iter_lines()` methods are async iterators.
 
@@ -71,6 +71,16 @@ The method signatures remain the same as the standard `requests` API:
 
 The methods will yield text if `decode_unicode` is set and the response includes
 an encoding. Otherwise the methods will yield bytes.
+
+You can also stream request bodies. To do this you should use an asynchronous
+generator that yields bytes.
+
+```python
+async def stream_body():
+    ...
+
+response = await requests.post('https://example.org', data=stream_body())
+```
 
 ## Mock Requests
 
