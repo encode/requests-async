@@ -11,6 +11,7 @@ import httpcore
 import requests
 import urllib3
 
+from .cookies import extract_cookies_to_jar
 from .exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from .models import Response
 
@@ -99,7 +100,7 @@ class HTTPAdapter:
             response.url = req.url
 
         # Add new cookies from the server.
-        requests.cookies.extract_cookies_to_jar(response.cookies, req, resp)
+        extract_cookies_to_jar(response.cookies, req, resp)
 
         # Give the Response some context.
         response.request = req

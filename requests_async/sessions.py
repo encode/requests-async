@@ -2,7 +2,7 @@ import datetime
 from urllib.parse import urljoin, urlparse
 
 import requests
-from requests.cookies import extract_cookies_to_jar, merge_cookies
+from requests.cookies import merge_cookies
 from requests.exceptions import (
     ChunkedEncodingError,
     ContentDecodingError,
@@ -13,6 +13,7 @@ from requests.status_codes import codes
 from requests.utils import requote_uri, rewind_body
 
 from . import adapters
+from .cookies import extract_cookies_to_jar
 
 
 def to_native_string(string, encoding="ascii"):
@@ -146,11 +147,9 @@ class Session(requests.Session):
 
             # If the hooks create history then we want those cookies too
             for resp in r.history:
-                requests.cookies.extract_cookies_to_jar(
-                    self.cookies, resp.request, resp.raw
-                )
+                extract_cookies_to_jar(self.cookies, resp.request, resp.raw)
 
-        requests.cookies.extract_cookies_to_jar(self.cookies, request, r.raw)
+        extract_cookies_to_jar(self.cookies, request, r.raw)
 
         # Redirect resolving.
         history = []
