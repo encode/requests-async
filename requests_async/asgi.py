@@ -9,8 +9,10 @@ import types
 import typing
 from urllib.parse import unquote, urljoin, urlsplit
 
+import httpcore
 import requests
 
+from .adapters import HTTPAdapter
 from .sessions import Session
 
 
@@ -40,7 +42,7 @@ def _get_reason_phrase(status_code: int) -> str:
         return ""
 
 
-class ASGIAdapter(requests.adapters.HTTPAdapter):
+class ASGIAdapter(HTTPAdapter):
     def __init__(self, app, suppress_exceptions: bool = False) -> None:
         self.app = app
         self.suppress_exceptions = suppress_exceptions
@@ -122,16 +124,8 @@ class ASGIAdapter(requests.adapters.HTTPAdapter):
                 assert (
                     not response_started
                 ), 'Received multiple "http.response.start" messages.'
-                raw_kwargs["version"] = 11
-                raw_kwargs["status"] = message["status"]
-                raw_kwargs["reason"] = _get_reason_phrase(message["status"])
-                raw_kwargs["headers"] = [
-                    (key.decode(), value.decode()) for key, value in message["headers"]
-                ]
-                raw_kwargs["preload_content"] = False
-                raw_kwargs["original_response"] = _MockOriginalResponse(
-                    raw_kwargs["headers"]
-                )
+                raw_kwargs["status_code"] = message["status"]
+                raw_kwargs["headers"] = message["headers"]
                 response_started = True
             elif message["type"] == "http.response.body":
                 assert (
@@ -143,9 +137,8 @@ class ASGIAdapter(requests.adapters.HTTPAdapter):
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
                 if request.method != "HEAD":
-                    raw_kwargs["body"].write(body)
+                    raw_kwargs["body"] += body
                 if not more_body:
-                    raw_kwargs["body"].seek(0)
                     response_complete = True
             elif message["type"] == "http.response.template":
                 template = message["template"]
@@ -154,7 +147,7 @@ class ASGIAdapter(requests.adapters.HTTPAdapter):
         request_complete = False
         response_started = False
         response_complete = False
-        raw_kwargs = {"body": io.BytesIO()}  # type: typing.Dict[str, typing.Any]
+        raw_kwargs = {"body": b""}  # type: typing.Dict[str, typing.Any]
         template = None
         context = None
 
@@ -167,17 +160,9 @@ class ASGIAdapter(requests.adapters.HTTPAdapter):
         if not self.suppress_exceptions:
             assert response_started, "TestClient did not receive any response."
         elif not response_started:
-            raw_kwargs = {
-                "version": 11,
-                "status": 500,
-                "reason": "Internal Server Error",
-                "headers": [],
-                "preload_content": False,
-                "original_response": _MockOriginalResponse([]),
-                "body": io.BytesIO(),
-            }
+            raw_kwargs = {"status_code": 500, "headers": []}
 
-        raw = requests.packages.urllib3.HTTPResponse(**raw_kwargs)
+        raw = httpcore.Response(**raw_kwargs)
         response = self.build_response(request, raw)
         if template is not None:
             response.template = template

@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse, RedirectResponse
+from starlette.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from starlette.routing import Route
 from uvicorn.config import Config
 from uvicorn.main import Server
@@ -43,6 +43,10 @@ async def echo_headers(request):
     )
 
 
+async def hello_world(request):
+    return PlainTextResponse("Hello, world!")
+
+
 async def redirect1(request):
     url = request.url_for("redirect2")
     return RedirectResponse(url)
@@ -64,6 +68,7 @@ routes = [
     Route("/echo_form_data", echo_form_data, methods=["POST", "PUT", "PATCH"]),
     Route("/echo_json", echo_json, methods=["POST", "PUT", "PATCH"]),
     Route("/echo_headers", echo_headers),
+    Route("/hello_world", hello_world),
     Route("/redirect1", redirect1, name="redirect1"),
     Route("/redirect2", redirect2, name="redirect2"),
     Route("/redirect3", redirect3, name="redirect3"),

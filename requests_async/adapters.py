@@ -11,7 +11,9 @@ import httpcore
 import requests
 import urllib3
 
+from .cookies import extract_cookies_to_jar
 from .exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+from .models import Response
 
 
 class HTTPAdapter:
@@ -20,7 +22,7 @@ class HTTPAdapter:
 
     async def send(
         self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
-    ) -> requests.Response:
+    ) -> Response:
 
         method = request.method
         url = request.url
@@ -71,7 +73,7 @@ class HTTPAdapter:
         :param resp: The urllib3 response object.
         :rtype: requests.Response
         """
-        response = requests.models.Response()
+        response = Response()
 
         # Fallback to None if there's no status_code, for whatever reason.
         response.status_code = resp.status_code
@@ -83,8 +85,14 @@ class HTTPAdapter:
 
         # Set encoding.
         response.encoding = requests.utils.get_encoding_from_headers(response.headers)
-        response._content = resp.body
         response.reason = resp.reason
+
+        if resp.is_closed:
+            response._content = resp.body
+            response._content_consumed = True
+        else:
+            response._content = False
+            response._content_consumed = False
 
         if isinstance(req.url, bytes):
             response.url = req.url.decode("utf-8")
@@ -92,10 +100,11 @@ class HTTPAdapter:
             response.url = req.url
 
         # Add new cookies from the server.
-        requests.cookies.extract_cookies_to_jar(response.cookies, req, resp)
+        extract_cookies_to_jar(response.cookies, req, resp)
 
         # Give the Response some context.
         response.request = req
         response.connection = self
+        response.raw = resp
 
         return response

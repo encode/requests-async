@@ -9,3 +9,7 @@ from requests.exceptions import (
     TooManyRedirects,
     URLRequired,
 )
+
+
+class ContentNotAvailable(Exception):
+    pass
