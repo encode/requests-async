@@ -82,4 +82,5 @@ class Response(BaseResponse):
 
     async def __aiter__(self):
         """Allows you to use a response as an iterator."""
-        return self.iter_content(128)
+        async for chunk in self.iter_content(128):
+            yield chunk
