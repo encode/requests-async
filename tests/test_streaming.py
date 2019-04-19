@@ -93,3 +93,16 @@ async def test_iter_lines_with_delimiter(server):
     async for line in response.iter_lines(decode_unicode=True, delimiter=" "):
         lines.append(line)
     assert lines == ["Hello,", "world!"]
+
+
+@pytest.mark.asyncio
+async def test_stream_request(server):
+    url = "http://127.0.0.1:8000/"
+
+    async def stream():
+        yield b"e"
+        yield b"xample"
+
+    response = await requests_async.post(url, data=stream())
+    assert response.status_code == 200
+    assert response.json() == {"method": "POST", "url": url, "body": "example"}
