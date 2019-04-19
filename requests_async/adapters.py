@@ -11,8 +11,8 @@ import httpcore
 import requests
 import urllib3
 
-from .models import Response
 from .exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+from .models import Response
 
 
 class HTTPAdapter:

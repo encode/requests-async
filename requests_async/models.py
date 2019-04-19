@@ -1,18 +1,19 @@
 import codecs
-from requests.models import PreparedRequest, Request, Response as BaseResponse
-from .exceptions import ContentNotAvailable
 
+from requests.models import PreparedRequest, Request, Response as BaseResponse
+
+from .exceptions import ContentNotAvailable
 
 ITER_CHUNK_SIZE = 512
 
 
 async def stream_decode_response_unicode(aiterator, encoding):
-    decoder = codecs.getincrementaldecoder(encoding)(errors='replace')
+    decoder = codecs.getincrementaldecoder(encoding)(errors="replace")
     async for chunk in aiterator:
         rv = decoder.decode(chunk)
         if rv:
             yield rv
-    rv = decoder.decode(b'', final=True)
+    rv = decoder.decode(b"", final=True)
     if rv:
         yield rv
 
@@ -28,11 +29,12 @@ class Response(BaseResponse):
         if self._content is False:
             stream = self.raw.stream
         else:
+
             async def stream():
                 yield self._content
 
         async def generate():
-            data = b''
+            data = b""
             async for part in stream():
                 data += part
                 while len(data) >= chunk_size:
@@ -42,17 +44,22 @@ class Response(BaseResponse):
                 yield data
 
         if decode_unicode and self.encoding is not None:
-            async for chunk in stream_decode_response_unicode(generate(), self.encoding):
+            async for chunk in stream_decode_response_unicode(
+                generate(), self.encoding
+            ):
                 yield chunk
         else:
             async for chunk in generate():
                 yield chunk
 
-
-    async def iter_lines(self, chunk_size=ITER_CHUNK_SIZE, decode_unicode=False, delimiter=None):
+    async def iter_lines(
+        self, chunk_size=ITER_CHUNK_SIZE, decode_unicode=False, delimiter=None
+    ):
         pending = None
 
-        async for chunk in self.iter_content(chunk_size=chunk_size, decode_unicode=decode_unicode):
+        async for chunk in self.iter_content(
+            chunk_size=chunk_size, decode_unicode=decode_unicode
+        ):
 
             if pending is not None:
                 chunk = pending + chunk
