@@ -14,11 +14,9 @@ Brings support for `async`/`await` syntax to Python's fabulous `requests` librar
 </a>
 </p>
 
-**Contributions towards closing off our [outstanding issues][issues] would be very welcome!** ✨ 🍰 ✨
-
 ## Requirements
 
-* Python 3.6, 3.7.
+* Python 3.6+
 
 ## Installation
 
@@ -55,6 +53,24 @@ async with requests.Session() as session:
 
 The `requests_async` package subclasses `requests`, so you're getting all the
 standard behavior and API you'd expect.
+
+## Streaming Responses
+
+The `iter_content()` and `iter_lines()` methods are async iterators.
+
+```python
+response = await requests.get('https://example.org', stream=True)
+async for chunk in response.iter_content():
+    ...
+```
+
+The method signatures remain the same as the standard `requests` API:
+
+* `iter_content(chunk_size=1, decode_unicode=False)`
+* `iter_lines(chunk_size=512, decode_unicode=False, delimiter=None)`
+
+The methods will yield text if `decode_unicode` is set and the response includes
+an encoding. Otherwise the methods will yield bytes.
 
 ## Mock Requests
 
@@ -99,15 +115,9 @@ async def test_homepage():
     assert response.status_code == 200
 ```
 
-## Limitations
-
-* Streaming uploads and downloads are unsupported.
-* SSL verification is not currently enabled.
-
-See the [issues list][issues] for more details.
-
 ## Alternatives
 
+The [`httpcore` package][httpcore] provides a low-level async HTTP client.
 The [`aiohttp` package][aiohttp] provides an alternative client for making async HTTP requests.
 
 [issues]: https://github.com/encode/requests-async/issues
