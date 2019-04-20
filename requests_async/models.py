@@ -25,6 +25,14 @@ class Response(BaseResponse):
             raise ContentNotAvailable("Cannot access .content on a streaming response")
         return self._content
 
+    async def read(self):
+        if self._content is False:
+            body = b""
+            async for chunk in self.iter_content(ITER_CHUNK_SIZE):
+                body += chunk
+            self._content = body
+        return self._content
+
     async def iter_content(self, chunk_size=1, decode_unicode=False):
         if self._content is False:
             stream = self.raw.stream
@@ -84,3 +92,6 @@ class Response(BaseResponse):
         """Allows you to use a response as an iterator."""
         async for chunk in self.iter_content(128):
             yield chunk
+
+    async def close(self):
+        await self.raw.close()

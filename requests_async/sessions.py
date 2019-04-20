@@ -176,7 +176,7 @@ class Session(requests.Session):
                 pass
 
         if not stream:
-            r.content
+            await r.read()
 
         return r
 
@@ -205,18 +205,16 @@ class Session(requests.Session):
             hist.append(resp)
             resp.history = hist[1:]
 
+            # Release the connection back into the pool.
             try:
-                resp.content  # Consume socket so it can be released
-            except (ChunkedEncodingError, ContentDecodingError, RuntimeError):
-                resp.raw.read(decode_content=False)
+                await resp.read()
+            finally:
+                await resp.close()
 
             if len(resp.history) >= self.max_redirects:
                 raise TooManyRedirects(
                     "Exceeded %s redirects." % self.max_redirects, response=resp
                 )
-
-            # Release the connection back into the pool.
-            resp.close()
 
             # Handle redirection without scheme (see: RFC 1808 Section 4)
             if url.startswith("//"):
