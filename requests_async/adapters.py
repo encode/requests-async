@@ -53,7 +53,7 @@ class HTTPAdapter:
                 ssl=ssl,
                 timeout=timeout,
             )
-        except (httpcore.BadRequest, socket.error) as err:
+        except (httpcore.BadResponse, socket.error) as err:
             raise ConnectionError(err, request=request)
         except httpcore.ConnectTimeout as err:
             raise ConnectTimeout(err, request=request)
