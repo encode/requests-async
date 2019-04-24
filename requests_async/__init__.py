@@ -16,4 +16,4 @@ from .models import PreparedRequest, Request, Response
 from .sessions import Session
 from .status_codes import codes
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
