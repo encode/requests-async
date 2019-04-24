@@ -1,15 +1,17 @@
 import asyncio
 import io
 import os
+import socket
 import ssl
 import typing
 from http.client import _encode
 from urllib.parse import urlparse
 
 import h11
-import httpcore
 import requests
 import urllib3
+
+import httpcore
 
 from .cookies import extract_cookies_to_jar
 from .exceptions import ConnectionError, ConnectTimeout, ReadTimeout
@@ -53,7 +55,7 @@ class HTTPAdapter:
                 ssl=ssl,
                 timeout=timeout,
             )
-        except (httpcore.BadResponse, socket.error) as err:
+        except socket.error as err:
             raise ConnectionError(err, request=request)
         except httpcore.ConnectTimeout as err:
             raise ConnectTimeout(err, request=request)
