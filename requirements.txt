@@ -1,5 +1,5 @@
-httpcore==0.1.*
-requests
+httpcore==0.2.*
+requests==2.*
 
 # Testing
 black

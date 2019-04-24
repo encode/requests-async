@@ -9,8 +9,9 @@ import types
 import typing
 from urllib.parse import unquote, urljoin, urlsplit
 
-import httpcore
 import requests
+
+import httpcore
 
 from .adapters import HTTPAdapter
 from .sessions import Session
