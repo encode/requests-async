@@ -50,7 +50,7 @@ class HTTPAdapter:
                 method,
                 url,
                 headers=headers,
-                body=body,
+                data=body,
                 stream=stream,
                 ssl=ssl,
                 timeout=timeout,
@@ -83,15 +83,15 @@ class HTTPAdapter:
 
         # Make headers case-insensitive.
         response.headers = requests.structures.CaseInsensitiveDict(
-            [(k.decode("latin1"), v.decode("latin1")) for k, v in resp.headers]
+            [(k.decode("latin1"), v.decode("latin1")) for k, v in resp.headers.raw]
         )
 
         # Set encoding.
         response.encoding = requests.utils.get_encoding_from_headers(response.headers)
-        response.reason = resp.reason
+        response.reason = resp.reason_phrase
 
         if resp.is_closed:
-            response._content = resp.body
+            response._content = resp.content
             response._content_consumed = True
         else:
             response._content = False

@@ -138,7 +138,7 @@ class ASGIAdapter(HTTPAdapter):
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
                 if request.method != "HEAD":
-                    raw_kwargs["body"] += body
+                    raw_kwargs["content"] += body
                 if not more_body:
                     response_complete = True
             elif message["type"] == "http.response.template":
@@ -148,7 +148,7 @@ class ASGIAdapter(HTTPAdapter):
         request_complete = False
         response_started = False
         response_complete = False
-        raw_kwargs = {"body": b""}  # type: typing.Dict[str, typing.Any]
+        raw_kwargs = {"content": b""}  # type: typing.Dict[str, typing.Any]
         template = None
         context = None
 
