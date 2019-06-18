@@ -1,7 +1,7 @@
 
-**This work has now been overtaken by the `http3` project:** https://www.encode.io/http3/
+**This work has been overtaken by the `http3` project:** https://www.encode.io/http3/
 
-We recommend using `http3.AsyncClient()` for async/await support with a requests-compatible API.
+We now recommend using `http3.AsyncClient()` for async/await support with a requests-compatible API.
 
 **Note**: Use `ipython` to try this from the console, since it supports `await`.
 
