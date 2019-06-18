@@ -11,7 +11,7 @@ import h11
 import requests
 import urllib3
 
-import httpcore
+import http3
 
 from .cookies import extract_cookies_to_jar
 from .exceptions import ConnectionError, ConnectTimeout, ReadTimeout
@@ -20,7 +20,7 @@ from .models import Response
 
 class HTTPAdapter:
     def __init__(self):
-        self.pool = httpcore.ConnectionPool()
+        self.pool = http3.ConnectionPool()
 
     async def send(
         self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
@@ -42,8 +42,7 @@ class HTTPAdapter:
         else:
             timeout_kwargs = {"connect_timeout": timeout, "read_timeout": timeout}
 
-        ssl = httpcore.SSLConfig(cert=cert, verify=verify)
-        timeout = httpcore.TimeoutConfig(**timeout_kwargs)
+        timeout = http3.TimeoutConfig(**timeout_kwargs)
 
         try:
             response = await self.pool.request(
@@ -51,16 +50,19 @@ class HTTPAdapter:
                 url,
                 headers=headers,
                 data=body,
-                stream=stream,
-                ssl=ssl,
+                cert=cert,
+                verify=verify,
                 timeout=timeout,
             )
         except socket.error as err:
             raise ConnectionError(err, request=request)
-        except httpcore.ConnectTimeout as err:
+        except http3.ConnectTimeout as err:
             raise ConnectTimeout(err, request=request)
-        except httpcore.ReadTimeout as err:
+        except http3.ReadTimeout as err:
             raise ReadTimeout(err, request=request)
+        finally:
+            if not stream:
+                await response.read()
 
         return self.build_response(request, response)
 
@@ -68,12 +70,12 @@ class HTTPAdapter:
         await self.pool.close()
 
     def build_response(self, req, resp):
-        """Builds a :class:`Response <requests.Response>` object from an httpcore
+        """Builds a :class:`Response <requests.Response>` object from an http3
         response. This should not be called from user code, and is only exposed
         for use when subclassing the
         :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`
         :param req: The :class:`PreparedRequest <PreparedRequest>` used to generate the response.
-        :param resp: The urllib3 response object.
+        :param resp: The http3 response object.
         :rtype: requests.Response
         """
         response = Response()
