@@ -1,5 +1,5 @@
 
-**Note**: This work has now been overtaken by the `http3` project: https://github.com/encode/http3
+**This work has now been overtaken by the `http3` project: https://github.com/encode/http3**
 
 We recommend using `http3.AsyncClient()`, which provides async/await support with a requests-compatible API.
 
@@ -20,8 +20,6 @@ Brings support for `async`/`await` syntax to Python's fabulous `requests` librar
     <img src="https://badge.fury.io/py/requests-async.svg?cache0" alt="Package version">
 </a>
 </p>
-
----
 
 ## Requirements
 
