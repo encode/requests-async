@@ -42,7 +42,6 @@ class HTTPAdapter:
         else:
             timeout_kwargs = {"connect_timeout": timeout, "read_timeout": timeout}
 
-        ssl = httpcore.SSLConfig(cert=cert, verify=verify)
         timeout = httpcore.TimeoutConfig(**timeout_kwargs)
 
         try:
@@ -52,7 +51,8 @@ class HTTPAdapter:
                 headers=headers,
                 data=body,
                 stream=stream,
-                ssl=ssl,
+                cert=cert,
+                verify=verify,
                 timeout=timeout,
             )
         except socket.error as err:
