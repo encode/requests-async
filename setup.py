@@ -47,7 +47,7 @@ setup(
     author_email="tom@tomchristie.com",
     packages=get_packages("requests_async"),
     data_files=[("", ["LICENSE.md"])],
-    install_requires=["requests==2.*", "httpcore==0.4.*"],
+    install_requires=["requests==2.*", "http3==0.1.*"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",

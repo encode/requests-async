@@ -1,4 +1,4 @@
-httpcore==0.4.*
+http3==0.1.*
 requests==2.*
 
 # Testing

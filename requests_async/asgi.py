@@ -11,7 +11,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 
 import requests
 
-import httpcore
+import http3
 
 from .adapters import HTTPAdapter
 from .sessions import Session
@@ -163,7 +163,7 @@ class ASGIAdapter(HTTPAdapter):
         elif not response_started:
             raw_kwargs = {"status_code": 500, "headers": []}
 
-        raw = httpcore.Response(**raw_kwargs)
+        raw = http3.AsyncResponse(**raw_kwargs)
         response = self.build_response(request, raw)
         if template is not None:
             response.template = template
