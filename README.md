@@ -3,6 +3,24 @@
 
 We recommend using `http3.AsyncClient()` for async/await support with a requests-compatible API.
 
+**Note**: Use `ipython` to try this from the console, since it supports `await`.
+
+```python
+>>> import http3
+>>> client = http3.AsyncClient()
+>>> r = await client.get('https://www.example.org/')
+>>> r
+<Response [200 OK]>
+>>> r.status_code
+200
+>>> r.protocol
+'HTTP/2'
+>>> r.headers['content-type']
+'text/html; charset=UTF-8'
+>>> r.text
+'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
+```
+
 ---
 
 # requests-async
