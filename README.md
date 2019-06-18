@@ -127,9 +127,9 @@ async def test_homepage():
 
 ## Alternatives
 
-* The [`httpcore` package][httpcore] provides a low-level async HTTP client.
+* The [`http3` package][http3] both sync and async HTTP clients, with a requests-compatible API.
 * The [`aiohttp` package][aiohttp] provides an alternative client for making async HTTP requests.
 
 [issues]: https://github.com/encode/requests-async/issues
 [aiohttp]: https://docs.aiohttp.org/en/stable/client.html
-[httpcore]: https://github.com/encode/httpcore
+[http3]: https://github.com/encode/http3
