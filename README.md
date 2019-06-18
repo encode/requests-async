@@ -9,14 +9,8 @@ We recommend using `http3.AsyncClient()` for async/await support with a requests
 >>> import http3
 >>> client = http3.AsyncClient()
 >>> r = await client.get('https://www.example.org/')
->>> r
-<Response [200 OK]>
 >>> r.status_code
 200
->>> r.protocol
-'HTTP/2'
->>> r.headers['content-type']
-'text/html; charset=UTF-8'
 >>> r.text
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
