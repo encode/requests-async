@@ -1,4 +1,4 @@
-http3==0.1.*
+http3==0.6.*
 requests==2.*
 
 # Testing
