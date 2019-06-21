@@ -60,9 +60,9 @@ class HTTPAdapter:
             raise ConnectTimeout(err, request=request)
         except http3.ReadTimeout as err:
             raise ReadTimeout(err, request=request)
-        finally:
-            if not stream:
-                await response.read()
+
+        if not stream:
+            await response.read()
 
         return self.build_response(request, response)
 
