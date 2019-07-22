@@ -1,13 +1,13 @@
 
-**This work has been overtaken by the `http3` project:** https://www.encode.io/http3/
+**This work has been overtaken by the `httpx` project:** https://github.com/encode/httpx
 
-We now recommend using `http3.AsyncClient()` for async/await support with a requests-compatible API.
+We now recommend using `httpx.AsyncClient()` for async/await support with a requests-compatible API.
 
 **Note**: Use `ipython` to try this from the console, since it supports `await`.
 
 ```python
->>> import http3
->>> client = http3.AsyncClient()
+>>> import httpx
+>>> client = httpx.AsyncClient()
 >>> r = await client.get('https://www.example.org/')
 >>> r.status_code
 200
@@ -146,9 +146,9 @@ async def test_homepage():
 
 ## Alternatives
 
-* The [`http3` package][http3] both sync and async HTTP clients, with a requests-compatible API.
+* The [`httpx` package][httpx] both sync and async HTTP clients, with a requests-compatible API.
 * The [`aiohttp` package][aiohttp] provides an alternative client for making async HTTP requests.
 
 [issues]: https://github.com/encode/requests-async/issues
 [aiohttp]: https://docs.aiohttp.org/en/stable/client.html
-[http3]: https://github.com/encode/http3
+[httpx]: https://github.com/encode/httpx
